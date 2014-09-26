@@ -1,0 +1,29 @@
+body{
+	font-size : 12px;
+}
+
+canvas {   
+	border-width: 1px;    
+	border-style: dashed;    
+	border-color: rgba(20, 126, 239, 0.50);
+	position: absolute;
+	z-index : 0;
+	left:70px;
+	top:20px;
+} 
+
+
+.border_nochoose {
+	border-width: 2px;  
+	border-style: dashed;     
+	border-color: rgba(20, 126, 239, 0.5);	
+	margin-top : 5px;
+}
+
+.border_choose {
+	border-width: 2px;  
+	border-style: dashed;     
+	border-color: rgb(230,69,4);
+	margin-top : 5px;
+}
+

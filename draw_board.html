@@ -1,0 +1,277 @@
+<!DOCTYPE>
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+	<title>draw picture</title>
+	<script type="text/javascript" src="http://code.jquery.com/jquery-latest.js"></script>
+	
+	<link href= 'canvas.css' type="text/css" rel="Stylesheet"/>
+
+	<script>       
+		//cancel list
+		var cancelList = new Array();
+		//cancel times
+		var cancelIndex = 0;
+		
+		var size =1;
+		var color="#000000";
+		$(function(){
+			var canvas =  document.getElementById("canvas");
+			canvas.width = 500;
+			canvas.height = 400;
+	
+
+			var canvas_bak =  document.getElementById("canvas_bak");
+			canvas_bak.width = 500;
+			canvas_bak.height = 400;
+		});	
+		
+		//cancel
+		var cancel = function(){
+			cancelIndex++;
+			document.getElementById("canvas").getContext("2d").clearRect(0,0,500,400);
+			var  image = new Image();
+			var index = cancelList.length-1 - cancelIndex  ;
+			var url = cancelList[index];
+			image.src = url;
+			image.onload = function(){
+				document.getElementById("canvas").getContext("2d").drawImage(image , 0 ,0 , image.width , image.height , 0 ,0 , 500 , 400);
+			}
+		}
+
+		//redo
+		var next = function(){
+			cancelIndex--;
+			document.getElementById("canvas").getContext("2d").clearRect(0,0,500,400);
+			var  image = new Image();
+			var index = cancelList.length-1 - cancelIndex  ;
+			var url = cancelList[index];
+			image.src = url;
+			image.onload = function(){
+				document.getElementById("canvas").getContext("2d").drawImage(image , 0 ,0 , image.width , image.height , 0 ,0 , 500 , 400);
+			}
+		}
+
+		//save image to array
+		var saveImageToAry = function (){
+			cancelIndex = 0;
+			var dataUrl =  canvas.toDataURL();
+			cancelList.push(dataUrl);		
+		}
+
+//draw pic
+var draw_graph = function(graphType,obj){	
+	console.log("new graphType is "+graphType);
+	var canvas =  document.getElementById("canvas");
+	var context = canvas.getContext("2d");
+	var canvasTop = $(canvas).offset().top
+	var canvasLeft = $(canvas).offset().left;
+	
+
+	var canvas_bak =  document.getElementById("canvas_bak");
+	var context_bak = canvas_bak.getContext("2d");
+	//把蒙版放于画板上面
+	$("#canvas_bak").css("z-index",1);
+	//先画在蒙版上 再复制到画布上
+		
+	chooseImg(obj);			
+	var canDraw = false;	
+	
+	var startX;
+	var startY;
+	
+	
+	
+	//when the mouse down we get the xy and start to draw 
+	var mouse_down=function(e){
+		console.log("here");
+		context.strokeStyle=color;
+		//context_bak.strokeStyle=color;
+		context.lineWidth = size;
+		//context_bak.lineWidth = size;		
+		startX=e.clientX-canvasLeft;
+		startY=e.clientY-canvasTop;
+		context_bak.moveTo(startX ,startY );
+		canDraw=true;
+		
+		if(graphType == 'pencil'){
+			context_bak.beginPath();
+		}else if(graphType == 'circle'){
+			console.log("draw circle!");
+			context.beginPath();
+			context.moveTo(startX ,startY );
+			context.lineTo(startX +2 ,startY+2);
+			context.stroke();			
+		}else if(graphType == 'rubber'){							
+			context.clearRect(startX - size * 10 ,  startY - size * 10 , size * 20 , size * 20);				
+		}	
+		document.getElementById("xycoordinates").innerHTML="Coordinates: (" + startX + "," + startY + ")";
+	};
+	var mouse_move=function(e){
+		var x = e.clientX   - canvasLeft;
+		var y = e.clientY  - canvasTop;
+		//draw a square
+		if(graphType == 'square'){
+			if(canDraw){
+				context_bak.beginPath();
+				clearContext();
+				context_bak.moveTo(startX , startY);						
+				context_bak.lineTo(x  ,startY );
+				context_bak.lineTo(x  ,y );
+				context_bak.lineTo(startX  ,y );
+				context_bak.lineTo(startX  ,startY );
+				context_bak.stroke();
+			}
+		}	
+		//draw a line
+		if(graphType =='line'){
+			if(canDraw){
+				context_bak.beginPath();
+				clearContext();
+				context_bak.moveTo(startX , startY);
+				context_bak.lineTo(x  ,y );
+				context_bak.stroke();
+			}		
+		}		
+		//use a pencil to draw
+		if(graphType == 'pencil'){
+			if(canDraw){
+				context_bak.lineTo(e.clientX   - canvasLeft ,e.clientY  - canvasTop);
+				context_bak.stroke();						
+			}
+		}
+		//draw a circle
+		if(graphType == 'circle'){						
+			clearContext();
+			if(canDraw){
+				context_bak.beginPath();			
+				var radii = Math.sqrt((startX - x) *  (startX - x)  + (startY - y) * (startY - y));
+				context_bak.arc(startX,startY,radii,0,Math.PI * 2,false);									
+				context_bak.stroke();
+			}else{	
+				context_bak.beginPath();					
+				context_bak.arc(x,y,20,0,Math.PI * 2,false);
+				context_bak.stroke();
+			}
+		}
+		//use handwriting
+		if(graphType == 'handwriting'){											
+			if(canDraw){
+				context_bak.beginPath();	
+				context_bak.strokeStyle = color;
+				context_bak.fillStyle  = color;
+				context_bak.arc(x,y,size*10,0,Math.PI * 2,false);		
+				context_bak.fill();
+				context_bak.stroke();
+				context_bak.restore();
+			}else{	
+				clearContext();
+				context_bak.beginPath();					
+				context_bak.fillStyle  = color;
+				context_bak.arc(x,y,size*10,0,Math.PI * 2,false);
+				context_bak.fill();
+				context_bak.stroke();
+			}
+		
+		}
+		//rubber
+		if(graphType == 'rubber'){	
+			context_bak.lineWidth = 1;
+			clearContext();
+			context_bak.beginPath();			
+			context_bak.strokeStyle =  '#000000';						
+			context_bak.moveTo(x - size * 10 ,  y - size * 10 );						
+			context_bak.lineTo(x + size * 10  , y - size * 10 );
+			context_bak.lineTo(x + size * 10  , y + size * 10 );
+			context_bak.lineTo(x - size * 10  , y + size * 10 );
+			context_bak.lineTo(x - size * 10  , y - size * 10 );	
+			context_bak.stroke();		
+			if(canDraw){							
+				context.clearRect(x - size * 10 ,  y - size * 10 , size * 20 , size * 20);
+										
+			}			
+		}		
+	};
+	
+	var mouse_up=function(e){
+		canDraw = false;
+		var image = new Image();
+		
+		if(graphType!='rubber'){	
+			console.log("not rubber");
+			image.src = canvas_bak.toDataURL();
+			image.onload = function(){
+				context.drawImage(image , 0 ,0 , image.width , image.height , 0 ,0 , 500 , 400);
+				clearContext();
+				saveImageToAry();
+			}
+			var x = e.clientX   - canvasLeft;
+			var y = e.clientY  - canvasTop;	
+			context.beginPath();
+			context.moveTo(x ,y );
+			context.lineTo(x +2 ,y+2);
+			context.stroke();	
+		}else{
+		console.log("rubber");}
+	};	
+	$(canvas_bak).unbind();
+	$(canvas_bak).bind('mousedown',mouse_down);
+	$(canvas_bak).bind('mousemove',mouse_move);
+	$(canvas_bak).bind('mouseup',mouse_up);
+var clearContext = function(type){
+	if(!type){
+		context_bak.clearRect(0,0,500,400);
+	}else{
+		context.clearRect(0,0,500,400);
+		context_bak.clearRect(0,0,500,400);
+	}
+};
+	
+	//change the bottom style
+	function chooseImg(obj){
+		var imgAry  = $("#drawController img");
+		for(var i=0;i<imgAry.length;i++){
+			$(imgAry[i]).removeClass('border_choose');
+			$(imgAry[i]).addClass('border_nochoose');				
+		}
+		$(obj).removeClass("border_nochoose");
+		$(obj).addClass("border_choose");
+	}
+}
+
+var clearall=function(){
+		document.getElementById("canvas").getContext("2d").clearRect(0,0,500,400);
+		document.getElementById("canvas_bak").getContext("2d").clearRect(0,0,500,400);
+}
+	
+	</script>
+
+</head>
+<body>
+
+
+		<div id="drawController">	
+			<img src = 'images/draw/pencil.png' width = '20px;' height = '20px;' class="img border_nochoose" onclick="draw_graph('pencil',this)"  title = 'pencil'/><br/>
+			<img src = 'images/draw/line.png' width = '20px;' height = '20px;' class="img border_nochoose" onclick="draw_graph('line',this);"  title = 'line'/><br/>
+			<img src = 'images/draw/cancel.png' width = '20px;' height = '20px;' class="img border_nochoose" onclick="cancel(this)"  title = 'cancel'/><br/>
+			<img src = 'images/draw/next.png' width = '20px;' height = '20px;' class="img border_nochoose" onclick="next(this)" title = 'redo'/><br/>
+			<img src = 'images/draw/square.png' width = '20px;' height = '20px;' class="img border_nochoose" onclick="draw_graph('square',this)"  title = 'rectangle'/><br/>
+			<img src = 'images/draw/circle.png' width = '20px;' height = '20px;' class="img border_nochoose" onclick="draw_graph('circle',this)"  title = 'circle'/><br/>
+			<img src = 'images/draw/handwriting.png' width = '20px;' height = '20px;' class="img border_nochoose" onclick="draw_graph('handwriting',this)" title = 'paint'/><br/>
+			<img src = 'images/draw/rubber.png' width = '20px;' height = '20px;' class="img border_nochoose" onclick="draw_graph('rubber',this)" title = 'rubber'/><br/>
+			<img src = 'images/draw/xx.png' width = '20px;' height = '20px;' class="img border_nochoose" onclick="clearall()" title = 'clean'/><br/>
+
+		</div>
+		<div style="float:left;width:30%">
+			<canvas id="canvas"></canvas>
+
+			<canvas id="canvas_bak"></canvas>
+		</div>
+		<div id="xycoordinates">hiii</div>
+
+
+
+	
+</body>
+</html>
